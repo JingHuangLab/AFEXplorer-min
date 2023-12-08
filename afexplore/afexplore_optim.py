@@ -49,7 +49,7 @@ def afe_fitting(afe_runner: AFExploreRunModel,
   optimizer = optax.adam(learning_rate=0.1)
   opt_state = optimizer.init(params=afe_weights)
 
-  print('AFEX started.')
+  print('AFEX started.', flush=True)
   
   # ------------------------------------------------------------------------------------------------
   def afe_loss_fn(afe_weights: optax.Params, 
