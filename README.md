@@ -1,4 +1,5 @@
-# AlphaFoldTools: versatile, flexible, and interoperable protein structure predictions with AlphaFold
+# AFEXplorerMini: Minimum implementation of AFEXplorer.
+A good starting point for re-development.
 ## Installation
 If you have a working AF2 environment, install the following packages depends on your JAX/JAXLIB 
 version in the environment. For more info, see the corresponding GitHub repos and find a compatible 
@@ -45,13 +46,13 @@ AFExplore inherits the license from AF2: no additional term was added.
 - OOM error is normal for longer sequences, e.g., a 444 AA monomer chain once requested ~47 GiB memory. 
   Such situation is beyond my expertise: AFExplore requires that the entire AF2 graph (which is huge) to be 
   loaded ready for reverse mode gradient computation. 
-- As a DL amateur, I can hardly keep track of all DL methods in the field that may share similarities
+- <del> As a DL amateur, I can hardly keep track of all DL methods in the field that may share similarities
   to AFExplore. The following two works are the references that I found to be most relavent to what is 
   presented here.
-
   1. [AF-Profile](https://github.com/patrickbryant1/AFProfile): Very interesting work on improving AF-Multimer
-    predictions by adding a bias to the input and train against a pLDDT loss. This work provides conceputual 
+    predictions by adding a bias to the input and train against a pLDDT loss. This work provides technical 
     inspirations. 
-
   2. [GNNExplainer](https://arxiv.org/abs/1903.03894): Also applies weights to the input features 
-    but for a different purpose (XAI). This work provides technical inspirations. 
+    but for a different purpose (XAI). This work provides conceptual inspirations. 
+  </del>
+- AFEX differs from previous methods, including AFProfile, as it integrates human expert into the protein structure prediction. Its point of motivation is interoperability to biophysical domain-knowledges, i.e., "you decide what structure you wish to have" from the prediction. If this "interoperability to biophysics" is not what you want, then this model is not designed for your case. 
