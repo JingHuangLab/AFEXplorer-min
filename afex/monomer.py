@@ -1,7 +1,6 @@
-# Wrapper for AFEX model runner.
+r"""AFEXplorer monomer."""
+# Wrapper for AFEX monomer model.
 # Zilin Song
-
-"""AFEXplorer RunModel."""
 
 
 import jax
@@ -15,10 +14,10 @@ import afex.utils as _u
 
 
 class AFEX(_af_model.RunModel):
-  r"""Container for AFEX-monomer model."""
+  r"""Container for AFEX monomer model."""
 
   def __init__(self, config: _u.TAFConfig, params: _u.TAFParams):
-    r"""Create a container for AFEX-monomer model.
+    r"""Create a container for AFEX  monomer model.
     
       Args:
         config (TAFConfig): AF monomer configurations, from `afex.utils.AFEXMonomerConfig()`.
@@ -27,12 +26,12 @@ class AFEX(_af_model.RunModel):
     self.config = config
     self.params = params
     self.multimer_mode = config.model.global_config.multimer_mode # Always False -> Monomer only.
-    assert self.multimer_mode==False, r"The AFEX-monomer container must be used in monomer mode."
+    assert self.multimer_mode==False, r"The AFEX monomer container must be used in monomer mode."
 
     def _forward_fn(batch: _u.TAFFeatures):
       model = _af_modules.AlphaFold(self.config.model)
       batch['msa_feat'] = batch['msa_feat'].at[:, :, :, 25:48].mul(batch['afex_feat'])
-      return model(batch, 
+      return model(batch                   =batch, 
                    is_training             =False, 
                    compute_loss            =False, 
                    ensemble_representations=False, 
@@ -41,7 +40,7 @@ class AFEX(_af_model.RunModel):
     self.apply = jax.jit(hk.transform(_forward_fn).apply)
     self.init  = jax.jit(hk.transform(_forward_fn).init )
   
-  def predict(self, batch: _u.TAFFeatures, afex_feat: jnp.ndarray, rand_seed: int) -> _u.TAFResults:
+  def forward(self, batch: _u.TAFFeatures, afex_feat: jnp.ndarray, rand_seed: int) -> _u.TAFResults:
     r"""The forward pass.
     
       Args:

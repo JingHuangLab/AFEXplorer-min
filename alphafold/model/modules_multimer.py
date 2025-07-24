@@ -638,6 +638,10 @@ class EmbeddingsAndEvoformer(hk.Module):
 
       msa_feat = create_msa_feat(batch).astype(dtype)
 
+
+      # TODO: here.
+
+
       preprocess_msa = common_modules.Linear(
           c.msa_channel, name='preprocess_msa')(
               msa_feat)

@@ -1,4 +1,4 @@
-"""Shared utilities."""
+r"""Shared utilities."""
 # Authors: Zilin Song.
 
 
@@ -45,7 +45,7 @@ def _afex_monomer_config(model_name:    str,
   # Turn off multimer_model.
   config.model.global_config.multimer_mode = False
   # Single ensemble.
-  config.data.eval.num_ensemble  = 1
+  config.data.eval.num_ensemble = 1
   # Maybe reduce `num_msa_clusters` for efficient memory scaling.
   config.data.eval.max_msa_clusters = msa_clusters
   # If use dropout.
