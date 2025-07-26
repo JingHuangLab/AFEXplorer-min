@@ -3,4 +3,6 @@ __pycache__/
 afexplore/data/
 .vscode/
 /data
-/rxiv
+/rxiv*
+slurm*
+run*

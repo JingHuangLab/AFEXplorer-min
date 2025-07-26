@@ -619,7 +619,7 @@ class EmbeddingsAndEvoformer(hk.Module):
       safe_key = prng.SafeKey(hk.next_rng_key())
 
     output = {}
-
+    
     batch['msa_profile'] = make_msa_profile(batch)
 
     with utils.bfloat16_context():
@@ -636,12 +636,12 @@ class EmbeddingsAndEvoformer(hk.Module):
       (batch['cluster_profile'],
        batch['cluster_deletion_mean']) = nearest_neighbor_clusters(batch)
 
+      #@@@ (ZS) applies the AFEX features.
+      batch['cluster_profile'] *= batch['afex_feat']  # [nClusters, nSeqLength, nAllTokens(23)]
+      #@@@
+
       msa_feat = create_msa_feat(batch).astype(dtype)
-
-
-      # TODO: here.
-
-
+  
       preprocess_msa = common_modules.Linear(
           c.msa_channel, name='preprocess_msa')(
               msa_feat)

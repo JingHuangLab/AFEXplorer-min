@@ -47,7 +47,7 @@ AFExplore inherits the license from AF2: no additional term was added.
   Such situation is beyond my expertise: AFExplore requires that the entire AF2 graph (which is huge) to be 
   loaded ready for reverse mode gradient computation. 
 - <del> As a DL amateur, I can hardly keep track of all DL methods in the field that may share similarities
-  to AFExplore. The following two works are the references that I found to be most relavent to what is 
+  to AFExplore. The following two works are the references that I found to be most relevant to what is 
   presented here.
   1. [AF-Profile](https://github.com/patrickbryant1/AFProfile): Very interesting work on improving AF-Multimer
     predictions by adding a bias to the input and train against a pLDDT loss. This work provides technical 
