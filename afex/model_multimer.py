@@ -206,7 +206,8 @@ def _iptm(logits: jnp.ndarray, bin_tm: jnp.ndarray, pair_mask: jnp.ndarray) -> j
   # From: alphafold/common/confidence.py, line 149-159.
   iptm = jnp.sum(jax.nn.softmax(logits, axis=-1) * bin_tm, axis=-1)
   # From: alphafold/common/confidence.py, line 165-167.
-  return jnp.mean(iptm * pair_mask, axis=-1)
+  pair_mask = pair_mask / jnp.sum(pair_mask, axis=-1, keepdims=True)
+  return jnp.sum(iptm * pair_mask, axis=-1)
 
 def _af_multimer_confidence_impl(res: _u.TAFResults, 
                                  plddt_bin_centers: jnp.ndarray,

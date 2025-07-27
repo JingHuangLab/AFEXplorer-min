@@ -6,3 +6,4 @@ afexplore/data/
 /rxiv*
 slurm*
 run*
+!runner*
