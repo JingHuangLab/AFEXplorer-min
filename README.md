@@ -41,18 +41,4 @@ Note that the AF2 parameter directories are renamed to `--afparam_dir`.
 AFExplore inherits the license from AF2: no additional term was added.
 ## NOTE - Z.S.: 
 **[Zilin Song](https://github.com/ZL-Song)** (song.zilin@outlook.com)
-- No AF2 source codes were modified: reproducing AFExplore given the reference presented here with your own AF
-  should be simple. 
-- OOM error is normal for longer sequences, e.g., a 444 AA monomer chain once requested ~47 GiB memory. 
-  Such situation is beyond my expertise: AFExplore requires that the entire AF2 graph (which is huge) to be 
-  loaded ready for reverse mode gradient computation. 
-- <del> As a DL amateur, I can hardly keep track of all DL methods in the field that may share similarities
-  to AFExplore. The following two works are the references that I found to be most relevant to what is 
-  presented here.
-  1. [AF-Profile](https://github.com/patrickbryant1/AFProfile): Very interesting work on improving AF-Multimer
-    predictions by adding a bias to the input and train against a pLDDT loss. This work provides technical 
-    inspirations. 
-  2. [GNNExplainer](https://arxiv.org/abs/1903.03894): Also applies weights to the input features 
-    but for a different purpose (XAI). This work provides conceptual inspirations. 
-  </del>
-- AFEX differs from previous methods, including AFProfile, as it integrates human expert into the protein structure prediction. Its point of motivation is interoperability to biophysical domain-knowledges, i.e., "you decide what structure you wish to have" from the prediction. If this "interoperability to biophysics" is not what you want, then this model is not designed for your case. 
+- This implements AFEX for AF-Multimer, i.e., AFEX-Multimer.
