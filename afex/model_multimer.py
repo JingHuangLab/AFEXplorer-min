@@ -1,6 +1,6 @@
 r"""The AFEX-Multimer model.
 NOTE: The AFEX-Multimer implementation requires modifications to the AF-Multimer source code:
-      See: `./alphafold/model/modules_multimer.py`, line 639-641.
+      See: `./alphafold/model/modules_multimer.py`, lines 427-429, 520-522, 647-649.
 """
 # Authors: Zilin Song.
 
@@ -75,9 +75,9 @@ class AFEXMultimer:
 # AF-Multimer base model configurations.
 def AFEXMultimerConfig(model_name:    str,
                        msa_clusters:  int  = 508,
+                       num_recycling: int  = 1,
                        use_dropout:   bool = False,
                        use_template:  bool = False,
-                       use_recycling: bool = False,
                        use_remat:     bool = True,
                        ) -> _u.TAFConfig:
   """The AF-Multimer base model configurations.
@@ -105,10 +105,10 @@ def AFEXMultimerConfig(model_name:    str,
   # If use template.
   config.model.embeddings_and_evoformer.template.enabled = use_template
   # If use recycling.
-  config.model.num_recycle                               = 0 if not use_recycling else 20
-  config.model.resample_msa_in_recycling                 = use_recycling
-  config.model.embeddings_and_evoformer.recycle_pos      = use_recycling
-  config.model.embeddings_and_evoformer.recycle_features = use_recycling
+  config.model.num_recycle                               = num_recycling
+  config.model.resample_msa_in_recycling                 = False if num_recycling==0 else True
+  config.model.embeddings_and_evoformer.recycle_pos      = False if num_recycling==0 else True
+  config.model.embeddings_and_evoformer.recycle_features = False if num_recycling==0 else True
   # If use re-materialization (reverse-mode autograd where necessary).
   config.model.global_config.use_remat = use_remat
   return config

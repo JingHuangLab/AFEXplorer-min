@@ -424,6 +424,10 @@ class AlphaFold(hk.Module):
       return_representations=False,
       safe_key=None):
 
+    # @@@ (ZS): do not apply AFEX during recycling.
+    batch['afex_impl'] = 1.
+    # @@@
+
     c = self.config
     impl = AlphaFoldIteration(c, self.global_config)
 
@@ -512,6 +516,10 @@ class AlphaFold(hk.Module):
     else:
       # No recycling.
       num_recycles = 0
+
+    # @@@ (ZS): applies AFEX for the final inference.
+    batch['afex_impl'] = batch['afex_feat']
+    # @@@
 
     # Run extra iteration.
     ret = apply_network(prev=prev, safe_key=safe_key)
@@ -637,7 +645,7 @@ class EmbeddingsAndEvoformer(hk.Module):
        batch['cluster_deletion_mean']) = nearest_neighbor_clusters(batch)
 
       #@@@ (ZS) applies the AFEX features.
-      batch['cluster_profile'] *= batch['afex_feat']  # [nClusters, nSeqLength, nAllTokens(23)]
+      batch['cluster_profile'] *= batch['afex_impl']  # [nClusters, nSeqLength, nAllTokens(23)]
       #@@@
 
       msa_feat = create_msa_feat(batch).astype(dtype)
