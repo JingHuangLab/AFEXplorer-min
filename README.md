@@ -1,4 +1,4 @@
-# AFEXplorerMini: Minimum implementation of AFEXplorer.
+# AFEXplorer: The minimum implementation of AFEXplorer for conditional prediction of protein structures.
 A good starting point for re-development.
 ## Installation
 If you have a working AF2 environment, install the following packages depends on your JAX/JAXLIB 
@@ -29,16 +29,25 @@ fix: just change the AF source.
 by the out-of-box AF2 inference pipeline. It only impacts the per-Residue pLDDT calculations after the
 AF2 inference. AFExplore inference does not rely on SciPy for per-Residue pLDDT calculation.
 ## Running AFExplore. 
-**AFExplore is compatible solely to AF-Monomer.**
-Note that the AF2 parameter directories are renamed to `--afparam_dir`.
-- ./afexplore/af_feat.py: Running featurization from fasta files. Almost the same way you would do 
-  for conventional AF2 runs. Note that some binary paths are given explicitly and the option FLAGS
-  have been re-organized.
-- ./afexplore/afexplore_optim.py: This is the gradients dynamics loop. 
-- ./afexplore/afexplore_runner.py: The surrogate model around `alphafold.model.model.RunModel` to exec
-  AFExplore gradients dynamics.
+**This implementation is compatible to AF-Monomer and AF-Multimer.**
 ## License
 AFExplore inherits the license from AF2: no additional term was added.
 ## NOTE - Z.S.: 
 **[Zilin Song](https://github.com/ZL-Song)** (song.zilin@outlook.com)
 - This implements AFEX for AF-Multimer, i.e., AFEX-Multimer.
+- We have only made the following changes to the AF source code:
+  - `alphafold/model/modules_multimer.py` lines 427-429, 520-522, 647-649.  
+## References
+If referring to the AF-Monomer implementation of AFEX, please cite: 
+```latex
+@article{xie2024conditioned,
+  title={Conditioned protein structure prediction},
+  author={Xie, Tengyu and Song, Zilin and Huang, Jing},
+  journal={PRX Life},
+  volume={2},
+  number={4},
+  pages={043001},
+  year={2024},
+  publisher={APS}
+}
+```
