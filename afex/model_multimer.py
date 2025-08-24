@@ -17,7 +17,7 @@ import alphafold.model.config           as _af_config
 import alphafold.model.modules_multimer as _af_modules
 
 import afex.utils as _u
-
+import afex.model as _m
 
 class AFEXMultimer:
   r"""The container for the AFEX-Multimer model."""
@@ -75,7 +75,7 @@ class AFEXMultimer:
 # AF-Multimer base model configurations.
 def AFEXMultimerConfig(model_name:    str,
                        msa_clusters:  int  = 508,
-                       num_recycling: int  = 1,
+                       num_recycling: int  = 20,
                        use_dropout:   bool = False,
                        use_template:  bool = False,
                        use_remat:     bool = True,
@@ -124,68 +124,6 @@ def AFEXMultimerParams(model_name: str) -> _u.TAFParams:
   assert model_name in _af_config.MODEL_PRESETS.get('multimer')
   return _u.load_params(model_name=model_name)
 
-
-# AF-Multimer confidence outputs.
-def _plddt_bin_center(num_bins: int) -> jnp.ndarray:
-  r"""Returns the bin centers for pLDDT computation.
-  
-    Args:
-      num_bins (int): `config.model.heads.predicted_lddt.num_bins`.
-  """
-  # From: alphafold/common/confidence.py, line 31-36.
-  bin_width = 1./float(num_bins)
-  bin_centers = jnp.arange(start=.5*bin_width, stop=1., step=bin_width)
-  return bin_centers
-def _plddt(logits: jnp.ndarray, bin_centers: jnp.ndarray) -> jnp.ndarray:
-  r"""JAX-differentiable implementation of the AF-Multimer pLDDT prediction head.
-
-    Args:
-      logits      (jnp.ndarray): `AFResults['predicted_lddt']['logits']`.
-      bin_centers (jnp.ndarray): The bin centers.
-    
-    Returns:
-      pLDDT (jnp.ndarray): the residue-wise pLDDT.
-  """
-  # From: alphafold/common/confidence.py, line 34-36.
-  return jnp.sum(jax.nn.softmax(logits, axis=-1) * bin_centers[None, :], axis=-1) # [Nres, ]
-
-
-def _ptm_bin_tm(num_res: int, num_bins: int, max_error_bin: float) -> jnp.ndarray:
-  r"""Returns the bin-wise TM for pTM and ipTM computation.
-  
-    Args:
-      num_res       (int):   `af_batch['aatype'].shape[0]`.
-      num_bins      (int):   `af_config.model.heads.predicted_aligned_error.num_bins`.
-      max_error_bin (float): `af_config.model.heads.predicted_aligned_error.max_error_bin`.
-  """
-  # Compute `d0`.
-  ## From: alphafold/common/confidence.py, line 142-147.
-  num_res = int(num_res) if num_res >= 19. else 19
-  d0      = 1.24 * (num_res - 15) ** (1./3.) - 1.8
-  # Compute `bin_centers`.
-  ## From: alphafold/model/modules.py, line 1160-1162.
-  breaks = jnp.linspace(0., float(max_error_bin), num_bins-1)
-  ## From: alphafold/common/confidence.py, line 50-54.
-  step = breaks[1] - breaks[0]
-  bin_centers = jnp.asarray(breaks + step / 2.)
-  bin_centers = jnp.concatenate((bin_centers, jnp.asarray([bin_centers[-1] + step])), axis=0)
-  # From: alphafold/common/confidence.py, line 152-153.
-  bin_tm = 1. / (1. + jnp.square(bin_centers) / jnp.square(d0))
-  return bin_tm
-def _ptm(logits: jnp.ndarray, bin_tm: jnp.ndarray) -> jnp.ndarray:
-  r"""JAX-differentiable implementation of the AF-Multimer pTM prediction head.
-  
-    Args:
-      logits (jnp.ndarray): `AFResults['predicted_aligned_error']['logits']`.
-      bin_tm (jnp.ndarray): The bin-wise TM score.
-
-    Returns: 
-      pTM (jnp.ndarray): the residue-wise pTM score.
-  """
-  # From: alphafold/common/confidence.py, line 149-155.
-  return jnp.mean(jnp.sum(jax.nn.softmax(logits, axis=-1)*bin_tm, axis=-1), axis=-1)
-
-
 def _iptm_pair_mask(asym_id: jnp.ndarray) -> jnp.ndarray:
   r"""Returns the pair masks for ipTM computation.
   
@@ -219,9 +157,9 @@ def _af_multimer_confidence_impl(res: _u.TAFResults,
   logits_plddt = res['predicted_lddt'         ]['logits']
   logits_ptm   = res['predicted_aligned_error']['logits']
   # to scores.
-  plddt =  _plddt(logits=logits_plddt, bin_centers=plddt_bin_centers)
-  ptm   =  _ptm  (logits=logits_ptm, bin_tm=ptm_bin_tm)
-  iptm  = _iptm  (logits=logits_ptm, bin_tm=ptm_bin_tm, pair_mask=iptm_pair_mask)
+  plddt =  _m. _plddt(logits=logits_plddt, bin_centers=plddt_bin_centers)
+  ptm   =  _m. _ptm  (logits=logits_ptm, bin_tm=ptm_bin_tm)
+  iptm  =     _iptm  (logits=logits_ptm, bin_tm=ptm_bin_tm, pair_mask=iptm_pair_mask)
   return dict( plddt= plddt, 
                ptm  = ptm  ,
               iptm  =iptm  )
@@ -250,10 +188,10 @@ def AFMultimerConfidenceHead( plddt_num_bins: int,
           `ptm`:   The  pTM   scores, AF takes the max value.
           `iptm`:  The ipTM   scores, AF takes the max value.
   """
-  plddt_bin_centers = _plddt_bin_center(num_bins=plddt_num_bins)
-  ptm_bin_tm        = _ptm_bin_tm(num_res      =ptm_num_res, 
-                                  num_bins     =ptm_num_bins, 
-                                  max_error_bin=ptm_max_error_bin, )
+  plddt_bin_centers = _m._plddt_bin_center(num_bins=plddt_num_bins)
+  ptm_bin_tm        = _m._ptm_bin_tm(num_res      =ptm_num_res, 
+                                     num_bins     =ptm_num_bins, 
+                                     max_error_bin=ptm_max_error_bin, )
   iptm_pair_mask    = _iptm_pair_mask(asym_id=iptm_asym_id)
   return functools.partial(_af_multimer_confidence_impl, 
                            plddt_bin_centers=plddt_bin_centers,

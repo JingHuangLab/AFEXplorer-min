@@ -1,4 +1,4 @@
-r"""The AFEX-Multimer model runner."""
+r"""The AFEX model runner."""
 # Authors: Zilin Song.
 
 
@@ -11,14 +11,15 @@ import jax
 import jax.numpy as jnp
 import     numpy as  np
 
+import alphafold.model.features as _af_feat
 import alphafold.common.protein as _af_prot
 
-import afex.model_multimer as _m
-import afex.utils          as _u
+import afex.model as _m
+import afex.utils as _u
 
 
-class AFEXMultimerRunner:
-  r"""The runner for the AFEX-Multimer model."""
+class AFEXRunner:
+  r"""The runner for the AFEX model."""
 
   def __init__(self, 
                work_dir: str, 
@@ -43,7 +44,7 @@ class AFEXMultimerRunner:
     self.pdbs_dir = os.path.join(self.work_dir, 'afex_pdbs')
     self.afex_dir = os.path.join(self.work_dir, 'afex_checkpoints')
     # components.
-    self.afex = _m.AFEXMultimer(config=afex_config, params=afex_params)
+    self.afex = _m.AFEX(config=afex_config, params=afex_params)
 
   @property
   def whoami(self) -> str: return self._whoami
@@ -55,7 +56,7 @@ class AFEXMultimerRunner:
               feat_afex:    jnp.ndarray = None, 
               optimizer:    optax.GradientTransformation = optax.adam(learning_rate=.01),
               optim_nsteps: int = 100, 
-              loss_weights: tuple[float, float, float, float] = (1., 1., 1., 1.), ):
+              loss_weights: tuple[float, float, float, float] = (1., 1., 1.), ):
     r"""Execute the AFEX-Multimer run.
     
       Args:
@@ -68,7 +69,7 @@ class AFEXMultimerRunner:
         optim_nsteps (int):
           The number of optimization steps to execute, default: 100.
         loss_weights (tuple[float, float, float, float]):
-          The weighting factor for the losses: `colvar`, `pLDDT`, `pTM`, `ipTM`.
+          The weighting factor for the losses: `colvar`, `pLDDT`, `pTM`.
     """
     # prepare io.
     if not os.path.exists(self.work_dir):
@@ -86,17 +87,18 @@ class AFEXMultimerRunner:
     # prepare features - AF.
     feat_af: _u.TAFFeatures = np.load(self.feat_dir, allow_pickle=True)
     self.logger.info(f"Loaded AF features: {feat_af.keys()}.")
+    feat_af = _af_feat.np_example_to_features(np_example=feat_af, config=self.afex.config, random_seed=0)
+    self.logger.info(f"Processed AF features: {feat_af.keys()}.")
     
     # unpack loss weights.
-    _w_colvar, _w_plddt, _w_ptm, _w_iptm = loss_weights
+    _w_colvar, _w_plddt, _w_ptm = loss_weights
 
     # create the confidence head for loss bp.
-    confidence_head = _m.AFMultimerConfidenceHead(
+    confidence_head = _m.AFConfidenceHead(
       plddt_num_bins   =self.afex.config.model.heads.predicted_lddt.num_bins, 
       ptm_num_res      =int(feat_af['aatype'].shape[0]), 
       ptm_num_bins     =self.afex.config.model.heads.predicted_aligned_error.num_bins, 
-      ptm_max_error_bin=self.afex.config.model.heads.predicted_aligned_error.max_error_bin, 
-      iptm_asym_id     =np.asarray(feat_af['asym_id']), )
+      ptm_max_error_bin=self.afex.config.model.heads.predicted_aligned_error.max_error_bin, )
     
     def _forward(_feat_afex: optax.Params) -> tuple[jnp.ndarray, dict]:
       _res = self.afex.forward(feat_af=feat_af, feat_afex=_feat_afex, rand_seed=0)
@@ -106,24 +108,19 @@ class AFEXMultimerRunner:
       _res_confidence = confidence_head(res=_res)
       _plddt = _res_confidence[ 'plddt']
       _ptm   = _res_confidence[ 'ptm'  ]
-      _iptm  = _res_confidence['iptm'  ]
       _loss_plddt = 1.-jnp.mean(_plddt)
       _loss_ptm   = 1.-jnp.mean(_ptm)
-      _loss_iptm  = 1.-jnp.mean(_iptm)
       # loss - weighted sum.
-      _loss = _loss_colvar*_w_colvar + _loss_plddt*_w_plddt + _loss_ptm*_w_ptm + _loss_iptm*_w_iptm
+      _loss = _loss_colvar*_w_colvar + _loss_plddt*_w_plddt + _loss_ptm*_w_ptm
       # auxiliaries.
       _aux = dict(
         res =_res, 
         loss=dict(colvar=jax.lax.stop_gradient(_loss_colvar), 
                    plddt=jax.lax.stop_gradient(_loss_plddt), 
                    ptm  =jax.lax.stop_gradient(_loss_ptm), 
-                  iptm  =jax.lax.stop_gradient(_loss_iptm), 
                   total =jax.lax.stop_gradient(_loss), ), 
         confidence=dict( plddt=jax.lax.stop_gradient(jnp.mean(_plddt)), 
-                         ptm  =jax.lax.stop_gradient(jnp.max (_ptm  )), 
-                        iptm  =jax.lax.stop_gradient(jnp.max (_iptm )), 
-                        rank  =jax.lax.stop_gradient(jnp.max (_iptm )*.2+jnp.max (_ptm  )*.8), ), 
+                         ptm  =jax.lax.stop_gradient(jnp.max (_ptm  )), ), 
       )
       return _loss, _aux
     
@@ -153,13 +150,10 @@ class AFEXMultimerRunner:
                          f"total - { aux['loss']['total' ]:8.4f}; "
                          f"colvar - {aux['loss']['colvar']:8.4f}; "
                          f"plddt - { aux['loss'][ 'plddt']:6.4f}; "
-                         f"ptm - {   aux['loss'][ 'ptm'  ]:6.4f}; "
-                         f"iptm - {  aux['loss']['iptm'  ]:6.4f}"
+                         f"ptm - {   aux['loss'][ 'ptm'  ]:6.4f}."
                           " || CONFIDENCE: "
                          f"pLDDT - {aux['confidence'][ 'plddt']:6.4f}; "
-                         f"pTM - {  aux['confidence'][ 'ptm'  ]:6.4f}; "
-                         f"ipTM - { aux['confidence']['iptm'  ]:6.4f}; "
-                         f"rank - { aux['confidence']['rank'  ]:6.4f}")
+                         f"pTM - {  aux['confidence'][ 'ptm'  ]:6.4f}.")
         
         # AFEX checkpoint.
         np.save(afex_dir:=os.path.join(self.afex_dir, f"checkpoint{_}.npy"), np.asarray(feat_afex))
