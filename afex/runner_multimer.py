@@ -170,7 +170,7 @@ class AFEXMultimerRunner:
           p = _af_prot.from_prediction(features =feat_af, 
                                        result   =_u.cast_jnp_to_np(aux['res']), 
                                        b_factors=None, 
-                                       remove_leading_feature_dimension=False, ) # False 4 multimer.
+                                       remove_leading_feature_dimension=False, ) # False = multimer.
           f.write(_af_prot.to_pdb(p))
           self.logger.info(f"  AFEX PDB: {pdb_dir}")
 

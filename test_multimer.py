@@ -15,7 +15,7 @@ def colvar(pos: jnp.ndarray) -> jnp.ndarray:
 
 
 
-runner.execute(colvar_fn=lambda x: 0., )
+runner.execute(colvar_fn=lambda x: 0., optim_nsteps=10)
 
 
 # import alphafold.model.model as _af_m

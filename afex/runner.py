@@ -26,16 +26,16 @@ class AFEXRunner:
                feat_dir: str, 
                afex_config: _u.TAFConfig, 
                afex_params: _u.TAFParams, ):
-    r"""Create the runner for the AFEX-Multimer model.
+    r"""Create the runner for the AFEX model.
     
       Args:
         work_dir (str):     The directory to which the results output.
         feat_dir (str):     The directory to the `features.pkl`.
-        config (TAFConfig): The AF-Multimer base model configurations.
-        params (TAFParams): The AF-Multimer base model parameters.
+        config (TAFConfig): The AF base model configurations.
+        params (TAFParams): The AF base model parameters.
     """
     # private presets.
-    self._whoami = 'AFEX-Multimer'
+    self._whoami = 'AFEX'
     self._logger = logging.getLogger(name=self._whoami)
     self._logger.setLevel('INFO')
     # directories.
@@ -57,7 +57,7 @@ class AFEXRunner:
               optimizer:    optax.GradientTransformation = optax.adam(learning_rate=.01),
               optim_nsteps: int = 100, 
               loss_weights: tuple[float, float, float, float] = (1., 1., 1.), ):
-    r"""Execute the AFEX-Multimer run.
+    r"""Execute the AFEX run.
     
       Args:
         colvar_fn (Callable[[jnp.ndarray], jnp.ndarray]):
@@ -164,7 +164,7 @@ class AFEXRunner:
           p = _af_prot.from_prediction(features =feat_af, 
                                        result   =_u.cast_jnp_to_np(aux['res']), 
                                        b_factors=None, 
-                                       remove_leading_feature_dimension=False, ) # False 4 multimer.
+                                       remove_leading_feature_dimension=True, ) # True = monomer.
           f.write(_af_prot.to_pdb(p))
           self.logger.info(f"  AFEX PDB: {pdb_dir}")
 
