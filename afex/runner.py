@@ -134,7 +134,7 @@ class AFEXRunner:
     optimstat = optimizer.init(feat_afex)
     
     _forward_fn = jax.jit(_forward)
-    _compile_str = ' (compiling AFEX forward function)'  
+    _compile_str = ' (compiling AFEX forward function)'
     
     # AFEX Optimization loop.
     for _ in range(optim_nsteps):
