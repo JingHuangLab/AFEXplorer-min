@@ -56,7 +56,7 @@ class AFEXRunner:
               feat_afex:    jnp.ndarray = None, 
               optimizer:    optax.GradientTransformation = optax.adam(learning_rate=.01),
               optim_nsteps: int = 100, 
-              loss_weights: tuple[float, float, float, float] = (1., 1., 1.), ):
+              loss_weights: tuple[float, float] = (1., 1.), ):
     r"""Execute the AFEX run.
     
       Args:
@@ -68,8 +68,8 @@ class AFEXRunner:
           The optimizer, default: `optax.adam(learning_rate=.01)`.
         optim_nsteps (int):
           The number of optimization steps to execute, default: 100.
-        loss_weights (tuple[float, float, float, float]):
-          The weighting factor for the losses: `colvar`, `pLDDT`, `pTM`.
+        loss_weights (tuple[float, float]):
+          The weighting factor for the losses: `colvar`, `pLDDT`.
     """
     # prepare io.
     if not os.path.exists(self.work_dir):
@@ -91,14 +91,11 @@ class AFEXRunner:
     self.logger.info(f"Processed AF features: {feat_af.keys()}.")
     
     # unpack loss weights.
-    _w_colvar, _w_plddt, _w_ptm = loss_weights
+    _w_colvar, _w_plddt = loss_weights
 
     # create the confidence head for loss bp.
     confidence_head = _m.AFConfidenceHead(
-      plddt_num_bins   =self.afex.config.model.heads.predicted_lddt.num_bins, 
-      ptm_num_res      =int(feat_af['aatype'].shape[0]), 
-      ptm_num_bins     =self.afex.config.model.heads.predicted_aligned_error.num_bins, 
-      ptm_max_error_bin=self.afex.config.model.heads.predicted_aligned_error.max_error_bin, )
+      plddt_num_bins   =self.afex.config.model.heads.predicted_lddt.num_bins, )
     
     def _forward(_feat_afex: optax.Params) -> tuple[jnp.ndarray, dict]:
       _res = self.afex.forward(feat_af=feat_af, feat_afex=_feat_afex, rand_seed=0)
@@ -107,26 +104,22 @@ class AFEXRunner:
       # loss - confidence.
       _res_confidence = confidence_head(res=_res)
       _plddt = _res_confidence[ 'plddt']
-      _ptm   = _res_confidence[ 'ptm'  ]
       _loss_plddt = 1.-jnp.mean(_plddt)
-      _loss_ptm   = 1.-jnp.mean(_ptm)
       # loss - weighted sum.
-      _loss = _loss_colvar*_w_colvar + _loss_plddt*_w_plddt + _loss_ptm*_w_ptm
+      _loss = _loss_colvar*_w_colvar + _loss_plddt*_w_plddt
       # auxiliaries.
       _aux = dict(
         res =_res, 
         loss=dict(colvar=jax.lax.stop_gradient(_loss_colvar), 
                    plddt=jax.lax.stop_gradient(_loss_plddt), 
-                   ptm  =jax.lax.stop_gradient(_loss_ptm), 
                   total =jax.lax.stop_gradient(_loss), ), 
-        confidence=dict( plddt=jax.lax.stop_gradient(jnp.mean(_plddt)), 
-                         ptm  =jax.lax.stop_gradient(jnp.max (_ptm  )), ), 
+        confidence=dict( plddt=jax.lax.stop_gradient(jnp.mean(_plddt)),), 
       )
       return _loss, _aux
     
     # AFEX Optimization prep.
     if feat_afex is None:
-      feat_afex = jnp.ones((self.afex.nclus, feat_af.get('seq_length'), self.afex.ntoks))
+      feat_afex = jnp.ones((self.afex.nclus, feat_af.get('seq_length')[0], self.afex.ntoks))
       self.logger.info(f"COLD start AFEX features, shape {feat_afex.shape}. ")
     else:
       self.logger.info(f"WARM start AFEX features, shape {feat_afex.shape}.")
@@ -149,11 +142,9 @@ class AFEXRunner:
         self.logger.info( " || LOSS: "
                          f"total - { aux['loss']['total' ]:8.4f}; "
                          f"colvar - {aux['loss']['colvar']:8.4f}; "
-                         f"plddt - { aux['loss'][ 'plddt']:6.4f}; "
-                         f"ptm - {   aux['loss'][ 'ptm'  ]:6.4f}."
+                         f"plddt - { aux['loss'][ 'plddt']:6.4f}."
                           " || CONFIDENCE: "
-                         f"pLDDT - {aux['confidence'][ 'plddt']:6.4f}; "
-                         f"pTM - {  aux['confidence'][ 'ptm'  ]:6.4f}.")
+                         f"pLDDT - {aux['confidence'][ 'plddt']:6.4f}.")
         
         # AFEX checkpoint.
         np.save(afex_dir:=os.path.join(self.afex_dir, f"checkpoint{_}.npy"), np.asarray(feat_afex))

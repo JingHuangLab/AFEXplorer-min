@@ -43,6 +43,14 @@ class AFEX:
     self.apply = jax.jit(hk.transform(_forward_fn).apply)
     self.init  = jax.jit(hk.transform(_forward_fn).init )
   
+  @property
+  def nclus(self) -> int:
+    return self.config.data.eval.max_msa_clusters
+  
+  @property
+  def ntoks(self) -> int:
+    return 23 # 20 AAs + Mask + Gap + Unknown
+  
   def forward(self, 
               feat_af:   _u.TAFFeatures, 
               feat_afex: jnp.ndarray, 
@@ -137,60 +145,14 @@ def _plddt(logits: jnp.ndarray, bin_centers: jnp.ndarray) -> jnp.ndarray:
   # From: alphafold/common/confidence.py, line 34-36.
   return jnp.sum(jax.nn.softmax(logits, axis=-1) * bin_centers[None, :], axis=-1) # [Nres, ]
 
-
-def _ptm_bin_tm(num_res: int, num_bins: int, max_error_bin: float) -> jnp.ndarray:
-  r"""Returns the bin-wise TM for pTM and ipTM computation.
-  
-    Args:
-      num_res       (int):   `af_batch['aatype'].shape[0]`.
-      num_bins      (int):   `af_config.model.heads.predicted_aligned_error.num_bins`.
-      max_error_bin (float): `af_config.model.heads.predicted_aligned_error.max_error_bin`.
-  """
-  # Compute `d0`.
-  ## From: alphafold/common/confidence.py, line 142-147.
-  num_res = int(num_res) if num_res >= 19. else 19
-  d0      = 1.24 * (num_res - 15) ** (1./3.) - 1.8
-  # Compute `bin_centers`.
-  ## From: alphafold/model/modules.py, line 1160-1162.
-  breaks = jnp.linspace(0., float(max_error_bin), num_bins-1)
-  ## From: alphafold/common/confidence.py, line 50-54.
-  step = breaks[1] - breaks[0]
-  bin_centers = jnp.asarray(breaks + step / 2.)
-  bin_centers = jnp.concatenate((bin_centers, jnp.asarray([bin_centers[-1] + step])), axis=0)
-  # From: alphafold/common/confidence.py, line 152-153.
-  bin_tm = 1. / (1. + jnp.square(bin_centers) / jnp.square(d0))
-  return bin_tm
-def _ptm(logits: jnp.ndarray, bin_tm: jnp.ndarray) -> jnp.ndarray:
-  r"""JAX-differentiable implementation of the AF pTM prediction head.
-  
-    Args:
-      logits (jnp.ndarray): `AFResults['predicted_aligned_error']['logits']`.
-      bin_tm (jnp.ndarray): The bin-wise TM score.
-
-    Returns: 
-      pTM (jnp.ndarray): the residue-wise pTM score.
-  """
-  # From: alphafold/common/confidence.py, line 149-155.
-  return jnp.mean(jnp.sum(jax.nn.softmax(logits, axis=-1)*bin_tm, axis=-1), axis=-1)
-
-def _af_confidence_impl(res: _u.TAFResults, 
-                        plddt_bin_centers: jnp.ndarray,
-                        ptm_bin_tm: jnp.ndarray, 
-                        ) -> _u.TAFResults:
+def _af_confidence_impl(res: _u.TAFResults, plddt_bin_centers: jnp.ndarray) -> _u.TAFResults:
   r"""The AF confidence heads impl."""
   # unpack logits.
   logits_plddt = res['predicted_lddt'         ]['logits']
-  logits_ptm   = res['predicted_aligned_error']['logits']
   # to scores.
   plddt = _plddt(logits=logits_plddt, bin_centers=plddt_bin_centers)
-  ptm   = _ptm  (logits=logits_ptm, bin_tm=ptm_bin_tm)
-  return dict( plddt= plddt, 
-               ptm  = ptm  , )
-def AFConfidenceHead(plddt_num_bins: int, 
-                     ptm_num_res:    int, 
-                     ptm_num_bins:   int, 
-                     ptm_max_error_bin: float, 
-                     ) -> typing.Callable[[_u.TAFResults], _u.TAFResults]:
+  return dict( plddt= plddt, )
+def AFConfidenceHead(plddt_num_bins: int) -> typing.Callable[[_u.TAFResults], _u.TAFResults]:
   r"""The AF confidence head.
   
     Args:
@@ -211,9 +173,4 @@ def AFConfidenceHead(plddt_num_bins: int,
           `iptm`:  The ipTM   scores, AF takes the max value.
   """
   plddt_bin_centers = _plddt_bin_center(num_bins=plddt_num_bins)
-  ptm_bin_tm        = _ptm_bin_tm(num_res      =ptm_num_res, 
-                                  num_bins     =ptm_num_bins, 
-                                  max_error_bin=ptm_max_error_bin, )
-  return functools.partial(_af_confidence_impl, 
-                           plddt_bin_centers=plddt_bin_centers,
-                           ptm_bin_tm=ptm_bin_tm, )
+  return functools.partial(_af_confidence_impl, plddt_bin_centers=plddt_bin_centers)
