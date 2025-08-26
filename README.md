@@ -1,4 +1,4 @@
-# AFEXplorer: The minimum implementation of AFEXplorer for conditional prediction of protein structures.
+# AFEXplorer-min: The minimum implementation of AFEXplorer for conditional prediction of protein structures.
 **[Zilin Song](https://github.com/ZL-Song)** (song.zilin@outlook.com)  
 ## Installation
 If you have a working AF2 environment, install the following packages depends on your JAX/JAXLIB 

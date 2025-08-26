@@ -11,8 +11,15 @@ runner = _r.AFEXMultimerRunner(work_dir='./run0',
                                afex_params=_m.AFEXMultimerParams(model_name=model_name), )
 
 def colvar(pos: jnp.ndarray) -> jnp.ndarray:
-  r"""pos - [Nres, 37 ,3]."""
+  r"""The CV loss function that should return a scalar tensor as the CV loss.
+    
+    Args:
+      pos (jnp.ndarray): 
+        The AF-Multimer predicted coordinates shape [Nres, 37 ,3], 
+        `_res['structure_module']['final_atom_positions']`.
+  """
+  return 0.
 
 
 
-runner.execute(colvar_fn=lambda x: 0., optim_nsteps=10)
+runner.execute(colvar_fn=colvar, optim_nsteps=10)
