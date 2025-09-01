@@ -8,7 +8,7 @@ release.
 chex
 optax
 ```
-If install from scratch, the following provides a non-Docker approach, depends on your cuda version:
+If installing from scratch, the following provides a non-Docker approach, depends on your cuda version:
 ```bash
 conda create --name af2
 conda activate af2
