@@ -32,7 +32,7 @@ AF2 inference. AFExplorer inference does not rely on SciPy for the pLDDT calcula
 - This implementation is compatible to both **AF** and **AF-Multimer**.
 - I have only made the following changes to the AF source code:  
 `alphafold/model/modules_multimer.py` lines 427-429, 520-522, 647-649.
-- In principle, the AFEX code can also be migrated to ColabFold (which essentially enables more efficient MSA searching and featurizations and shares identical inference pipeline). However, we did not test AFEX with ColabFold at this moment.  
+- In principle, the AFEX code can also be migrated to ColabFold (which essentially enables more efficient MSA featurizations and shares the identical inference pipeline with AF/AF-Multimer). However, we did not test AFEX with ColabFold at this moment.  
 ## References
 If referring to the AF-Monomer implementation of AFEX, you are welcomed to cite: 
 ```latex
