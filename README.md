@@ -1,4 +1,4 @@
-# AFEXplorer-min: The minimum implementation of AFEXplorer for conditional prediction of protein structures.
+# AFEXplorer-min: The minimum implementation of AFEXplorer for conditioned prediction of protein structures.
 **[Zilin Song](https://github.com/ZL-Song)** (song.zilin@outlook.com)  
 ## Installation
 If you have a working AF2 environment, install the following packages depends on your JAX/JAXLIB 
@@ -8,7 +8,7 @@ release.
 chex
 optax
 ```
-If install from scratch, the following provides a non-Docker approach, depends on your cuda version (below are for CUDA 11.2):
+If installing from scratch, the following provides a non-Docker approach, depends on your cuda version (below are for CUDA 11.2):
 ```bash
 conda create --name af2
 conda activate af2
@@ -20,7 +20,8 @@ If an error related to "ptxas version string" arises, try `module load` your cud
 ## NOTE - Z.S.
 - This implementation is compatible to both **AF** and **AF-Multimer**.
 - I have only made the following changes to the AF source code:  
-`alphafold/model/modules_multimer.py` lines 427-429, 520-522, 647-649.  
+`alphafold/model/modules_multimer.py` lines 427-429, 520-522, 647-649.
+- In principle, the AFEX code can also be migrated to ColabFold (which essentially enables more efficient MSA featurizations and shares the identical inference pipeline with AF/AF-Multimer). However, we did not test AFEX with ColabFold at this moment.  
 ## References
 If referring to the AF-Monomer implementation of AFEX, you are welcomed to cite: 
 ```latex
